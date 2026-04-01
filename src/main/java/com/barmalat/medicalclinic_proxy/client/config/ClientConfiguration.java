@@ -2,6 +2,7 @@ package com.barmalat.medicalclinic_proxy.client.config;
 
 import feign.Retryer;
 import feign.codec.ErrorDecoder;
+import okhttp3.OkHttpClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,15 +15,16 @@ public class ClientConfiguration {
 
     @Bean
     public Retryer retryer() {
-        return new Retryer.Default(
-                100L,
-                1000L,
-                3
-        );
+        return new Retryer.Default(100L, 1000L, 3);
     }
 
     @Bean
     public MedicalclinicClientFallbackFactory medicalClinicClientFallbackFactory() {
         return new MedicalclinicClientFallbackFactory();
+    }
+
+    @Bean
+    public OkHttpClient okHttpClient() {
+        return new OkHttpClient();
     }
 }

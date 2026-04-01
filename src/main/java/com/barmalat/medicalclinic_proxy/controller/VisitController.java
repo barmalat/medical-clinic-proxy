@@ -1,10 +1,14 @@
 package com.barmalat.medicalclinic_proxy.controller;
 
-import com.barmalat.medicalclinic_proxy.client.MedicalclinicClient;
+import com.barmalat.medicalclinic_proxy.exception.ErrorMessageDto;
 import com.barmalat.medicalclinic_proxy.model.PageResponse;
 import com.barmalat.medicalclinic_proxy.model.VisitDto;
 import com.barmalat.medicalclinic_proxy.service.VisitService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +23,17 @@ public class VisitController {
     private final VisitService visitService;
 
     @Operation(summary = "find visits by specialization and time range", description = """
-        konieczny request param z przedzialem czasu i specjalizacja, np: /visits?specialization=chirurg&from=2026-04-01T00:00&to=2026-04-30T23:59
-        
-        Opcjonalny Request Param dot. paginacji, np. /visits?page=0&size=3
-        """)
+            mandatory request param with specialization and time range, ex. /visits?specialization=chirurg&from=2026-04-01T00:00&to=2026-04-30T23:59
+            
+            Optional request param for pagination, ex. /visits?page=0&size=3
+            """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Visits found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
     @GetMapping
     public PageResponse<VisitDto> findVisits(
             @RequestParam String specialization,
@@ -37,16 +48,23 @@ public class VisitController {
     }
 
     @Operation(summary = "find available visits", description = """
-            W zależności od oczekiwań, wymagane zachowanie jednego z trzech schematów request param:
+            mandatory one of the three schemes of request param:
             
-            1. jeśli chcemy wyswietlić dostępne wizyty dla danej specjalizacji w konkretnym dniu: /visits/available?date=2026-04-01&specialization=chirurg
+            1. with date and speciality, ex. /visits/available?date=2026-04-01&specialization=chirurg
             
-            2. jeśli chcemy wyświetlić dostępne wizyty dla danej specjalizacji w danym przedziale czasu: /visits/available?specialization=chirurg&from=2026-04-01T00:00&to=2026-04-30T23:59
+            2. with time range and specialization, ex. /visits/available?specialization=chirurg&from=2026-04-01T00:00&to=2026-04-30T23:59
             
-            3. jeśli chcemy wyświetlić dostępne wizyty bez danej specjalizacji w danym przedziale czasu: /visits/available?from=2026-04-01T00:00&to=2026-04-30T23:59
+            3. with time range, ex. /visits/available?from=2026-04-01T00:00&to=2026-04-30T23:59
             
-            Opcjonalny Request Param dot. paginacji, np. /visits/available?page=0&size=3
+            Optional request param for pagination, ex. /visits?page=0&size=3
             """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Available visits found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
     @GetMapping("/available")
     public PageResponse<VisitDto> findAvailableVisits(
             @RequestParam(required = false) String date,
@@ -61,8 +79,20 @@ public class VisitController {
         return result;
     }
 
-    @Operation(summary = "Odwołaj wizytę przez doktora (P-002)",
-            description = "Ustawia status wizyty na CANCELLED. Pacjent pozostaje przypisany w historii.")
+    @Operation(summary = "cancel visit by visitId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Visit cancelled",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = VisitDto.class))}),
+            @ApiResponse(responseCode = "404", description = "Visit not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "409", description = "Visit is already cancelled",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
     @PatchMapping("/{visitId}/cancel")
     public VisitDto cancelVisit(@PathVariable Long visitId) {
         log.info("Received PATCH /visits/{}/cancel", visitId);

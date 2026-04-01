@@ -1,10 +1,14 @@
 package com.barmalat.medicalclinic_proxy.controller;
 
-import com.barmalat.medicalclinic_proxy.client.MedicalclinicClient;
+import com.barmalat.medicalclinic_proxy.exception.ErrorMessageDto;
 import com.barmalat.medicalclinic_proxy.model.PageResponse;
 import com.barmalat.medicalclinic_proxy.model.VisitDto;
 import com.barmalat.medicalclinic_proxy.service.PatientService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +23,17 @@ public class PatientController {
     private final PatientService patientService;
 
     @Operation(summary = "find all patient visits",
-            description = "opcjonalny request param paginacyjny")
+            description = "Optional request param for pagination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Patient visits found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class))}),
+            @ApiResponse(responseCode = "404", description = "Patient not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
     @GetMapping("/{patientId}/visits")
     public PageResponse<VisitDto> findPatientVisits(
             @PathVariable Long patientId,
@@ -32,6 +46,22 @@ public class PatientController {
     }
 
     @Operation(summary = "add patient by patientId to visit by visitId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Patient added to visit",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = VisitDto.class))}),
+            @ApiResponse(responseCode = "404", description = "Visit or patient not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "409", description = "Visit is not available",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "400", description = "Visit start time is in the past",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
     @PatchMapping("/{patientId}/visits/{visitId}")
     public VisitDto addPatientToVisit(
             @PathVariable Long patientId,
