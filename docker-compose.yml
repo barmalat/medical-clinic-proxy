@@ -14,6 +14,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://dbmedicalclinic:5432/compose-postgres
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=admin
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/medical-clinic/protocol/openid-connect/certs
     networks:
       - medicalclinic_network
 
@@ -27,6 +28,24 @@ services:
       - appmedicalclinic
     environment:
       - SPRING_CLOUD_OPENFEIGN_CLIENT_CONFIG_MEDICALCLINICCLIENT_URL=http://appmedicalclinic:8080
+    networks:
+      - medicalclinic_network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: keycloak
+    command: start-dev
+    ports:
+      - "8180:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HOSTNAME=localhost
+      - KC_HOSTNAME_PORT=8080
+      - KC_HOSTNAME_STRICT=false
+      - KC_HOSTNAME_STRICT_HTTPS=false
+    volumes:
+      - keycloak_volumes:/opt/keycloak/data
     networks:
       - medicalclinic_network
 
@@ -60,6 +79,7 @@ services:
 volumes:
   postgres_volumes:
   pgadmin_volumes:
+  keycloak_volumes:
 
 networks:
   medicalclinic_network:

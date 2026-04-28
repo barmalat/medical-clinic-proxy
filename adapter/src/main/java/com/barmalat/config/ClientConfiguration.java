@@ -1,4 +1,4 @@
-package com.barmalat.medicalclinic_proxy.client.config;
+package com.barmalat.config;
 
 import feign.RequestInterceptor;
 import feign.Retryer;
