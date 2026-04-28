@@ -1,14 +1,12 @@
 package com.barmalat;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+@RequiredArgsConstructor
 @Component
 public class MedicalclinicProviderImpl implements MedicalclinicProvider {
     private final MedicalclinicClient client;
-
-    public MedicalclinicProviderImpl(MedicalclinicClient client) {
-        this.client = client;
-    }
 
     @Override
     public PageResponse<Doctor> findDoctors(String specialization, int page, int size) {
