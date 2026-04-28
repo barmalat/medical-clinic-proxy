@@ -1,0 +1,73 @@
+package com.barmalat.controller;
+
+import com.barmalat.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/patients")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "/patients", description = "all end points from PatientController")
+public class PatientController {
+    private final PatientService patientService;
+    private final VisitMapper visitMapper;
+
+    @Operation(summary = "find all patient visits",
+            description = "Optional request param for pagination")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Patient visits found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = PageResponse.class))}),
+            @ApiResponse(responseCode = "404", description = "Patient not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
+    @GetMapping("/{patientId}/visits")
+    public PageResponse<VisitDto> findPatientVisits(
+            @PathVariable Long patientId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        log.info("Received GET /patients/{}/visits", patientId);
+        PageResponse<VisitDto> result = patientService.findPatientVisits(patientId, page, size)
+                .map(visitMapper::toDto);
+        log.info("Returned GET /patients/{}/visits with {} elements", patientId, result.totalElements());
+        return result;
+    }
+
+    @Operation(summary = "add patient by patientId to visit by visitId")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Patient added to visit",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = VisitDto.class))}),
+            @ApiResponse(responseCode = "404", description = "Visit or patient not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "409", description = "Visit is not available",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "400", description = "Visit start time is in the past",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))}),
+            @ApiResponse(responseCode = "503", description = "Medical clinic service unavailable",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorMessageDto.class))})})
+    @PatchMapping("/{patientId}/visits/{visitId}")
+    public VisitDto addPatientToVisit(
+            @PathVariable Long patientId,
+            @PathVariable Long visitId) {
+        log.info("Received PATCH /patients/{}/visits/{}", patientId, visitId);
+        VisitDto result = visitMapper.toDto(patientService.addPatientToVisit(visitId, patientId));
+        log.info("Returned PATCH /patients/{}/visits/{} with status:{}", patientId, visitId, result.status());
+        return result;
+    }
+}
